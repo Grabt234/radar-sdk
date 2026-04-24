@@ -1,0 +1,43 @@
+name: Publish to PyPI (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Optional note or version reminder (purely informational)'
+        required: false
+        default: 'Manual release'
+
+# CRITICAL: These permissions are required for OIDC authentication
+permissions:
+  id-token: write # Required to request the JWT from GitHub
+  contents: read  # Required to check out the repository
+
+jobs:
+  build-and-publish:
+    name: Build and Publish Python Distro
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine
+
+    - name: Build source and wheel distributions
+      run: python -m build
+
+    - name: Check the binaries
+      run: twine check dist/*
+
+    - name: Publish package to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      # No username or password/token required! The action detects the OIDC token automatically.

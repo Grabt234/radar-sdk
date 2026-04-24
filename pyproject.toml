@@ -1,0 +1,74 @@
+[project]
+name = "radar-sdk"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "kaleido>=1.3.0",
+    "manim>=0.20.1",
+    "myst-parser>=5.1.0",
+    "nbconvert>=7.17.1",
+    "nbformat>=5.10.4",
+    "nbsphinx>=0.9.8",
+    "pandas>=3.0.2",
+    "plotly>=6.7.0",
+    "poethepoet>=0.44.0",
+    "polars>=1.40.0",
+    "pydantic>=2.13.4",
+    "pyright>=1.1.409",
+    "ruff>=0.15.11",
+    "scipy>=1.17.1",
+    "sphinx>=9.1.0",
+    "sphinx-autodoc2>=0.5.0",
+    "sphinx-collections>=0.3.1",
+    "sphinx-external-toc>=1.1.0",
+    "sphinx-rtd-theme>=3.1.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["radar"]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.poe.tasks]
+format = "ruff format"
+check = "ruff check --fix"
+types = "pyright"
+lint = ["format", "check", "types"]
+docs_remove_old_examples = "rm -rf docs/examples"
+docs_add_new_examples = "cp -r ./examples ./docs/examples"
+docs_remove_old_videos = "rm -rf docs/videos"
+docs_add_new_videos = "cp -r ./videos ./docs/videos"
+docs_relink_examples_and_videos = [
+    "docs_remove_old_examples",
+    "docs_remove_old_videos",
+    "docs_add_new_examples",
+    "docs_add_new_videos",
+]
+docs_make_build = "bash -lc 'cd docs && make html'"
+docs_make_clean = "bash -lc 'cd docs && make clean'"
+docs_all = [
+    "docs_make_clean",
+    "docs_relink_examples_and_videos",
+    "docs_make_build",
+]
+build_docs = "bash -lc 'cd docs && make html'"
+
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.2.0",
+    "pip>=26.1.1",
+    "nbsphinx>=0.9.8",
+    "pydata-sphinx-theme>=0.17.1",
+    "sphinx>=9.1.0",
+]

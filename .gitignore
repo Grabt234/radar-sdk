@@ -1,0 +1,23 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+*.ignore
+
+# Virtual environments
+.venv
+
+# Docs Generation
+notebooks_integrated
+videos_integrated
+docs/_build/
+docs/apidocs/
+docs/source/api/**
+!docs/source/api/.gitkeep
+docs/source/animations/*
+!docs/source/animations/.gitkeep
+media/
+tmp.py
