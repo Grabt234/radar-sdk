@@ -106,11 +106,11 @@ class Geometry(ABC):
         self._validate_input_df(df, required_column=target_col)
 
         if has_db:
+            lin_series = df.select(convert.from_db(db_col)).to_series()
             db_series = df.get_column(db_col)
-            lin_series = pl.Series(convert.from_db(db_series))
         else:
             lin_series = df.get_column(lin_col)
-            db_series = pl.Series(convert.to_db(lin_series))
+            db_series = df.select(convert.to_db(pl.col(lin_col))).to_series()
 
         self.df = self.df.with_columns(
             [db_series.alias(db_col), lin_series.alias(lin_col)]

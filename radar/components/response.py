@@ -1,7 +1,6 @@
 from radar.utils.typing import Frequency, AmplitudeUnit, DataHeader
 import polars as pl
 from radar.utils.calculate.convert import from_db
-import numpy as np
 
 
 class FrequencyResponse:
@@ -56,12 +55,11 @@ class FrequencyResponse:
         # 1. Exact Match Look-up
         exact_match = self._response.filter(pl.col(DataHeader.FREQ_FREQS) == freq.Hz)
         if not exact_match.is_empty():
-            gain_db = exact_match.item(0, DataHeader.FREQ_GAIN_DB)
-            return (
-                gain_db
-                if unit == AmplitudeUnit.DECIBEL
-                else float(from_db(np.array([gain_db]))[0])
-            )
+            if unit == AmplitudeUnit.DECIBEL:
+                expr = pl.col(DataHeader.FREQ_GAIN_DB)
+            else:
+                expr = from_db(DataHeader.FREQ_GAIN_DB)
+            return float(exact_match.select(expr).item(0, 0))
 
         # 2. Boundary Guards (Strict Exception Handling)
         min_freq = self._response[DataHeader.FREQ_FREQS][-1]
@@ -89,9 +87,10 @@ class FrequencyResponse:
         # Linear interpolation math
         gain_db = y0 + (freq.Hz - f0) * ((y1 - y0) / (f1 - f0))
 
-        # Inline conditional return formatting
-        return (
-            gain_db
-            if unit == AmplitudeUnit.DECIBEL
-            else float(from_db(np.array([gain_db]))[0])
-        )
+        if unit == AmplitudeUnit.DECIBEL:
+            return float(gain_db)
+        else:
+            expr = from_db("gain_db_col")
+            return float(
+                pl.DataFrame({"gain_db_col": [gain_db]}).select(expr).item(0, 0)
+            )

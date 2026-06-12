@@ -1,26 +1,24 @@
-from typing import Union
-
-import numpy as np
 import polars as pl
 
 from radar.utils.typing.constants import RadarConstants
 from radar.utils.typing.enums import DistanceUnit
 from radar.utils.typing.units import Distance, Frequency
 
-__all__ = ["to_db"]
+__all__ = ["from_db", "to_db", "cf_to_min_dist"]
 
 
-def to_db(arr: Union[np.typing.NDArray, pl.Series]) -> np.typing.NDArray:
-    """dB relative to peak for a normalized field amplitude pattern (``|E|/|E_max|``)."""
-    # np.maximum prevents log10(0) down to a -200 dB floor
-    return 20 * np.log10(np.maximum(arr, 1e-10))
+def from_db(col_name: str) -> pl.Expr:
+    """Polars expression equivalent of your from_db function."""
+    return 10.0 ** (pl.col(col_name) / 10.0)
 
 
-def from_db(arr: Union[np.typing.NDArray, pl.Series]) -> np.typing.NDArray:
-    """Converts dB back to a normalized linear field amplitude ratio (``|E|/|E_max|``)."""
-    # Converts a Polars Series to a NumPy array if necessary to maintain type consistency
-    array_input = arr.to_numpy() if isinstance(arr, pl.Series) else arr
-    return 10 ** (array_input / 20.0)
+def to_db(col_expr: pl.Expr) -> pl.Expr:
+    """Polars expression equivalent of your to_db function.
+
+    Uses pl.when().then().otherwise() to mimic np.maximum(arr, 1e-10)
+    without breaking the Polars execution graph.
+    """
+    return pl.when(col_expr > 1e-10).then(10.0 * col_expr.log10()).otherwise(-200.0)
 
 
 def cf_to_min_dist(frequency: Frequency) -> Distance:

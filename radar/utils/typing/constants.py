@@ -35,6 +35,10 @@ class DataHeader:
     GEOM_AMP_GAIN_LIN = "Element Amplifier Gain (Linear)"
     GEOM_PHASE_SHIFTER_PHASE_RAD = "Element Phase Shifter Phase (Radian)"
     GEOM_PHASE_SHIFTER_PHASE_DEG = "Element Phase Shifter Phase (Degree)"
+    MONOPULSE_SUMATION_DB = "Monopulse Summation (Decibel)"
+    MONOPULSE_DIFFERENCE_DB = "Monopulse Difference (Decibel)"
+    MONOPULSE_RAIO_DB = "Monopulse Ratio (Decibel)"
+    MONOPULSE_SENSITIVITY = "Monopulse Sensitivity (1/Rad)"
 
     @staticmethod
     def direction_domain_headers(

@@ -1,5 +1,7 @@
 from manim import ManimColor, Surface, VGroup
 
+from radar.utils.calculate.monopulse import Monopulse
+
 from .element import Element
 from .geometry import Geometry
 from radar.utils.typing import (
@@ -29,6 +31,7 @@ class Array:
     ):
         self._element = element
         self._geometry = geometry
+        self._monopulse = Monopulse()
 
         self.plot = self.Plot(self)
         self.animate = self.Animate(self)
@@ -50,24 +53,23 @@ class Array:
     def _calculate_beam_pattern(
         self, element: Element, frequency: Frequency, steer: tuple[Angle, Angle] | None
     ):
-
+        # 1. Compute the Array Factor DataFrame
         af_df = self.calculate_array_factor(frequency, steer)
+        element_pattern = element.beam_pattern(frequency)
 
-        # 2. Get the element's individual pattern
-        pattern = element.beam_pattern(frequency)
+        # 1. Pull the element gain out as a literal or expression
+        # If element_pattern is a DataFrame, use pl.lit() to broadcast it,
+        # or join/append if they are aligned. Assuming it's a scalar or pre-aligned:
+        element_gain_expr = pl.lit(element_pattern[DataHeader.BEAM_GAIN_LINEAR])
 
-        # 3. Extract numpy arrays for math
-        af_lin = af_df[DataHeader.ANTENNA_FACTOR_LINEAR].to_numpy().astype(np.float64)
-        gain_lin = pattern[DataHeader.BEAM_GAIN_LINEAR].to_numpy().astype(np.float64)
+        # 2. Define the total gain as an Expression instead of a Series
+        total_gain_expr = element_gain_expr * pl.col(DataHeader.ANTENNA_FACTOR_LINEAR)
 
-        # Total Array Gain = Element Gain * Array Factor
-        total_gain_lin = gain_lin * af_lin
-
-        # 4. Return the af_df with the NEW gain columns added/updated
+        # 3. safely pass the Expression to to_db()
         return af_df.with_columns(
             [
-                pl.Series(DataHeader.BEAM_GAIN_LINEAR, total_gain_lin),
-                pl.Series(DataHeader.BEAM_GAIN_DB, to_db(total_gain_lin)),
+                total_gain_expr.alias(DataHeader.BEAM_GAIN_LINEAR),
+                to_db(total_gain_expr).alias(DataHeader.BEAM_GAIN_DB),
             ]
         )
 
@@ -156,10 +158,23 @@ class Array:
     ) -> pl.DataFrame:
         return self._calculate_array_factor(frequency, steer)
 
-    class Plot(plotter.BeamInterface, plotter.GeometryInterface):
+    def monopulse(
+        self,
+        frequency: Frequency,
+        expr: pl.Expr,
+        steer: tuple[Angle, Angle] | None = None,
+    ):
+        beam_pattern = self.beam_pattern(frequency, steer)
+        geometry = self._geometry.geometry
+        return self._monopulse.calculate_monopulse(
+            frequency, beam_pattern, geometry, expr
+        )
+
+    class Plot(
+        plotter.BeamInterface, plotter.GeometryInterface, plotter.MonopulseInterface
+    ):
         def __init__(self, outer: "Array"):
             self._outer = outer
-            self.plot = plotter.Beam
 
         def beam(
             self,
@@ -172,7 +187,7 @@ class Array:
             steer: tuple[Angle, Angle] | None = None,
         ):
             df = self._outer.beam_pattern(frequency, steer)
-            self.plot._plot_beam(
+            plotter.Beam._plot_beam(
                 df,
                 direction_domain,
                 phase_unit,
@@ -183,6 +198,34 @@ class Array:
 
         def geometry(self):
             self._outer._geometry.plot.geometry()
+
+        def monopulse(
+            self,
+            direction_domain: DirectionDomain,
+            phase_unit: PhaseUnit,
+            amplitude_unit: AmplitudeUnit,
+            figure_type: FigureType,
+            frequency: Frequency,
+            condition: pl.Expr,
+            steer: tuple[Angle, Angle] | None = None,
+        ) -> None:
+            """Processes, calculates, and routes monopulse tracking data for visualization."""
+            beam_pattern = self._outer.beam_pattern(frequency, steer)
+            geometry_df = self._outer._geometry.geometry
+
+            # Calculate the underlying monopulse channel data
+            df = Monopulse.calculate_monopulse(
+                frequency, beam_pattern, geometry_df, condition
+            )
+
+            # Route to the newly standardized Monopulse visual dispatcher
+            plotter.Monopulse._plot_monopulse(
+                df=df,
+                direction_domain=direction_domain,
+                phase_unit=phase_unit,
+                amplitude_unit=amplitude_unit,
+                figure_type=figure_type,
+            )
 
     class Animate(animate.BeamInterface, animate.GeometryInterface):
         def __init__(self, outer: "Array") -> None:

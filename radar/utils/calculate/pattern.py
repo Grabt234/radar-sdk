@@ -49,33 +49,38 @@ class CustomPattern(Pattern):
         ]
         self._validate_presence(df, required_init)
 
-        metrics = df.select(
-            [
-                pl.col(DataHeader.AZIMUTH_DEG).min().alias("az_min"),
-                pl.col(DataHeader.AZIMUTH_DEG).max().alias("az_max"),
-                pl.col(DataHeader.ELEVATION_DEG).min().alias("el_min"),
-                pl.col(DataHeader.ELEVATION_DEG).max().alias("el_max"),
-            ]
-        )
-
+        # 1. Use .item() to extract single scalar metrics cleanly
         self._az_bound = AngleBound(
             (
-                Angle(metrics["az_min"][0], PhaseUnit.DEGREE),
-                Angle(metrics["az_max"][0], PhaseUnit.DEGREE),
+                Angle(
+                    df.select(pl.col(DataHeader.AZIMUTH_DEG).min()).item(),
+                    PhaseUnit.DEGREE,
+                ),
+                Angle(
+                    df.select(pl.col(DataHeader.AZIMUTH_DEG).max()).item(),
+                    PhaseUnit.DEGREE,
+                ),
             )
         )
         self._el_bound = AngleBound(
             (
-                Angle(metrics["el_min"][0], PhaseUnit.DEGREE),
-                Angle(metrics["el_max"][0], PhaseUnit.DEGREE),
+                Angle(
+                    df.select(pl.col(DataHeader.ELEVATION_DEG).min()).item(),
+                    PhaseUnit.DEGREE,
+                ),
+                Angle(
+                    df.select(pl.col(DataHeader.ELEVATION_DEG).max()).item(),
+                    PhaseUnit.DEGREE,
+                ),
             )
         )
 
+        # 2. Append the dB column if it doesn't exist yet
         if DataHeader.BEAM_GAIN_DB not in df.columns:
             df = df.with_columns(
-                pl.col(DataHeader.BEAM_GAIN_LINEAR)
-                .map_batches(to_db)
-                .alias(DataHeader.BEAM_GAIN_DB)
+                to_db(pl.col(DataHeader.BEAM_GAIN_LINEAR)).alias(
+                    DataHeader.BEAM_GAIN_DB
+                )
             )
 
         self.df = df
@@ -200,21 +205,25 @@ class Cosine(Pattern):
         Returns:
             pl.DataFrame: Dataset containing appended cosine gain metrics.
         """
-        az = df.select(DataHeader.AZIMUTH_RAD).to_numpy()
-        el = df.select(DataHeader.ELEVATION_RAD).to_numpy()
+        cos_theta_expr = (
+            pl.col(DataHeader.AZIMUTH_RAD).cos()
+            * pl.col(DataHeader.ELEVATION_RAD).cos()
+        )
 
-        # Typical implementation: cos(theta) where theta is the angle from boresight
-        # Assuming boresight is at (0,0)
-        cos_theta = np.cos(az) * np.cos(el)
+        # 2. Clip at 0 and raise to the power of self._order
+        mag_linear_expr = (
+            pl.when(cos_theta_expr > 0).then(cos_theta_expr).otherwise(0.0)
+            ** self._order
+        )
 
-        # Clip to 0 to ensure no back-lobes (hemispherical)
-        mag_linear = np.maximum(0, cos_theta) ** self._order
-        mag_db = to_db(mag_linear)
+        # 3. Assuming to_db can be expressed as a formula (e.g., 10 * mag_linear.log10())
+        # If to_db is a custom complex function, you might need to use .map_batches()
+        mag_db_expr = to_db(mag_linear_expr)
 
         return df.with_columns(
             [
-                pl.Series(DataHeader.BEAM_GAIN_DB, mag_db.ravel()),
-                pl.Series(DataHeader.BEAM_GAIN_LINEAR, mag_linear.ravel()),
+                mag_linear_expr.alias(DataHeader.BEAM_GAIN_LINEAR),
+                mag_db_expr.alias(DataHeader.BEAM_GAIN_DB),
             ]
         )
 
@@ -246,20 +255,21 @@ class Gaussian(Pattern):
         bw_az, bw_el = self._beam_width[0].rad, self._beam_width[1].rad
 
         sigma_const = -4 * np.log(2)
-        mag_linear = np.exp(
+
+        mag_linear_expr = (
             sigma_const
             * (
-                (df.select(DataHeader.AZIMUTH_RAD).to_numpy() / bw_az) ** 2
-                + (df.select(DataHeader.ELEVATION_RAD).to_numpy() / bw_el) ** 2
+                (pl.col(DataHeader.AZIMUTH_RAD) / bw_az) ** 2
+                + (pl.col(DataHeader.ELEVATION_RAD) / bw_el) ** 2
             )
-        )
+        ).exp()
 
-        mag_db = to_db(mag_linear)
+        mag_db_expr = to_db(mag_linear_expr)
 
         return df.with_columns(
             [
-                pl.Series(DataHeader.BEAM_GAIN_DB, mag_db.ravel()),
-                pl.Series(DataHeader.BEAM_GAIN_LINEAR, mag_linear.ravel()),
+                mag_linear_expr.alias(DataHeader.BEAM_GAIN_LINEAR),
+                mag_db_expr.alias(DataHeader.BEAM_GAIN_DB),
             ]
         )
 
@@ -287,23 +297,26 @@ class Sinc(Pattern):
         """
         bw_az, bw_el = self._beam_width[0].rad, self._beam_width[1].rad
 
-        az = df.select(DataHeader.AZIMUTH_RAD).to_numpy()
-        el = df.select(DataHeader.ELEVATION_RAD).to_numpy()
-
         # Constant for Sinc Half-Power Beamwidth (HPBW)
         # 1.3915 is the value where sinc^2(x) = 0.5
         k = 1.3915 * 2
 
         # np.sinc in numpy is sin(pi*x)/(pi*x)
-        arg_az = (k * az / bw_az) / np.pi
-        arg_el = (k * el / bw_el) / np.pi
+        arg_az_expr = (k * df[DataHeader.AZIMUTH_RAD] / bw_az) / np.pi
+        arg_el_expr = (k * df[DataHeader.ELEVATION_RAD] / bw_el) / np.pi
 
-        mag_linear = np.abs(np.sinc(arg_az) * np.sinc(arg_el))
-        mag_db = to_db(mag_linear)
+        def polars_sinc(x_expr):
+            pi_x = np.pi * x_expr
+            return pl.when(x_expr == 0).then(1.0).otherwise(pi_x.sin() / pi_x)
+
+        # 3. Compute the absolute linear magnitude
+        mag_linear_expr = (polars_sinc(arg_az_expr) * polars_sinc(arg_el_expr)).abs()
+
+        mag_db_expr = to_db(mag_linear_expr)
 
         return df.with_columns(
             [
-                pl.Series(DataHeader.BEAM_GAIN_DB, mag_db.ravel()),
-                pl.Series(DataHeader.BEAM_GAIN_LINEAR, mag_linear.ravel()),
+                mag_db_expr.alias(DataHeader.BEAM_GAIN_DB),
+                mag_linear_expr.alias(DataHeader.BEAM_GAIN_LINEAR),
             ]
         )

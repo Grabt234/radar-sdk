@@ -1,6 +1,6 @@
 [project]
 name = "radar-sdk"
-version = "0.2.0"
+version = "0.3.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -45,6 +45,7 @@ format = "ruff format"
 check = "ruff check --fix"
 types = "pyright"
 lint = ["format", "check", "types"]
+test = "pytest"
 docs_remove_old_examples = "rm -rf docs/examples"
 docs_add_new_examples = "cp -r ./examples ./docs/examples"
 docs_remove_old_videos = "rm -rf docs/videos"
@@ -65,6 +66,7 @@ docs_all = [
 build_docs = "bash -lc 'cd docs && make html'"
 
 
+
 [dependency-groups]
 dev = [
     "ipykernel>=7.2.0",
@@ -72,4 +74,6 @@ dev = [
     "nbsphinx>=0.9.8",
     "pydata-sphinx-theme>=0.17.1",
     "sphinx>=9.1.0",
+    "pytest>=8.0.0",
 ]
+
