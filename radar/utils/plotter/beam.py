@@ -289,4 +289,14 @@ class Beam:
             width=cls.FIGURE_WIDTH,
             height=cls.FIGURE_HEIGHT,
         )
-        fig.show()
+
+        fig.show(
+            config={
+                "toImageButtonOptions": {
+                    "filename": "custom_image_name",
+                    "height": 800,
+                    "width": 800,
+                    "scale": 1,
+                }
+            }
+        )

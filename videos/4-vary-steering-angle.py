@@ -1,5 +1,4 @@
 from manim import (
-    BLUE,
     DOWN,
     LEFT,
     RIGHT,
@@ -7,13 +6,11 @@ from manim import (
     WHITE,
     YELLOW,
     DEGREES,
-    Text,
     Arrow,
     Line,
     ThreeDScene,
     Create,
     ReplacementTransform,
-    Write,
 )
 from radar.components import geometry, Element
 from radar.components.array import Array

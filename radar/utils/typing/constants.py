@@ -31,6 +31,10 @@ class DataHeader:
     FREQ_GAIN_DB = "freq_gain_db"
     FREQ_GAIN_LINEAR = "freq_gain_lin"
     FREQ_FREQS = "freq_freqs"
+    GEOM_AMP_GAIN_DB = "Element Amplifier Gain (Decibel)"
+    GEOM_AMP_GAIN_LIN = "Element Amplifier Gain (Linear)"
+    GEOM_PHASE_SHIFTER_PHASE_RAD = "Element Phase Shifter Phase (Radian)"
+    GEOM_PHASE_SHIFTER_PHASE_DEG = "Element Phase Shifter Phase (Degree)"
 
     @staticmethod
     def direction_domain_headers(

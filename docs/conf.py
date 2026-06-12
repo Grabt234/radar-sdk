@@ -1,7 +1,6 @@
 # Configuration file for the Sphinx documentation builder.
 import os
 import sys
-import plotly.io as pio
 
 # 1. FORCE PLOTLY ENVIRONMENT VARIABLE (Must happen before everything else)
 # This forces any Jupyter sub-kernel spawned by nbsphinx to use SVG/Iframe

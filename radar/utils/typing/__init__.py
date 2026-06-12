@@ -21,7 +21,6 @@ __all__ = [
     "FrequencyUnit",
     "AmplitudeUnit",
     "PhaseUnit",
-    "validate_bound",
     "Position",
     "AngleBound",
     "DataHeader",

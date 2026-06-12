@@ -21,3 +21,4 @@ docs/source/animations/*
 !docs/source/animations/.gitkeep
 media/
 tmp.py
+*.png

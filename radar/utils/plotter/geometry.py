@@ -54,10 +54,13 @@ class Geometry:
             ValueError: If the DataFrame is empty or if the min/max values for
                 the position coordinates cannot be calculated.
         """
+        # Assuming you have a column name for the color data, e.g., DataHeader.COLOR_VAL
         fig = px.scatter(
             df,
             x=DataHeader.X_POS_M,
             y=DataHeader.Y_POS_M,
+            color=df[DataHeader.GEOM_AMP_GAIN_DB],
+            color_continuous_scale=px.colors.sequential.Viridis,
             width=cls.FIGURE_WIDTH,
             height=cls.FIGURE_HEIGHT,
         )
@@ -83,6 +86,9 @@ class Geometry:
         fig.update_layout(
             title="Position Distribution",
             yaxis_scaleanchor="x",  # keeps aspect ratio square
+            coloraxis_colorbar=dict(
+                title="Element Scaling [dB]"
+            ),  # <-- Optional: Customize the color axis title
         )
 
         fig.show()

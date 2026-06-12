@@ -82,6 +82,17 @@ class Array:
         pos_y = self._geometry.geometry[DataHeader.Y_POS_M].to_numpy()
         num_elements = pos_x.size
 
+        # --- Extract Element Amplitudes and Phases ---
+        # Fallback to uniform weights (1.0) and no phase shift if columns aren't present
+        amp = self._geometry.geometry[DataHeader.GEOM_AMP_GAIN_LIN].to_numpy()
+        elem_phase = self._geometry.geometry[
+            DataHeader.GEOM_PHASE_SHIFTER_PHASE_RAD
+        ].to_numpy()
+
+        # Combine amplitude and element-specific phase into a complex weight vector
+        # Shape: (N_elements,)
+        element_weights = amp * np.exp(1j * elem_phase)
+
         el_dom_rad = self.element.elevation_domain(PhaseUnit.RADIAN)
         az_dom_rad = self.element.azimuth_domain(PhaseUnit.RADIAN)
 
@@ -98,21 +109,29 @@ class Array:
         v0 = np.sin(el_steer)
 
         # --- Accumulate array factor (Vectorized) ---
-        # (u - u0) and (v - v0) represent the shift in the UV plane
         delta_u = u_flat - u0
         delta_v = v_flat - v0
 
-        # Broadcasting: (N_elements, 1) * (1, M_angles)
-        phases = k * (pos_x[:, np.newaxis] * delta_u + pos_y[:, np.newaxis] * delta_v)
+        # Spatial propagation phases
+        # Shape: (N_elements, M_angles)
+        spatial_phases = k * (
+            pos_x[:, np.newaxis] * delta_u + pos_y[:, np.newaxis] * delta_v
+        )
+
+        # Total complex signal per element: element_weights * e^(j * spatial_phases)
+        # Using broadcasting: (N_elements, 1) * (N_elements, M_angles)
+        complex_signals = element_weights[:, np.newaxis] * np.exp(1j * spatial_phases)
 
         # Complex sum across the element axis (axis 0)
-        af = np.sum(np.exp(1j * phases), axis=0) / num_elements
+        # Normalized by the sum of amplitudes to keep peak linear gain at 1.0 (or divided by num_elements)
+        norm_factor = np.sum(amp) if np.sum(amp) > 0 else num_elements
+        af = np.sum(complex_signals, axis=0) / norm_factor
+
         af_mag = np.abs(af)
         af_mag = np.maximum(af_mag, 1e-15)
 
         # --- Output DataFrame ---
         result_data = {
-            # Extract as a Series and convert to numpy for the calculation
             DataHeader.AZIMUTH_RAD: az_dom_rad.get_column(DataHeader.AZIMUTH_RAD),
             DataHeader.AZIMUTH_DEG: np.rad2deg(
                 az_dom_rad.get_column(DataHeader.AZIMUTH_RAD).to_numpy()
