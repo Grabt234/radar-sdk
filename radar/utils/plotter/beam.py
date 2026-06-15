@@ -1,6 +1,10 @@
+import os
+import plotly
 import polars as pl
 import numpy as np
 import plotly.express as px
+from plotly.graph_objects import Figure
+
 from abc import ABC, abstractmethod
 
 import plotly.graph_objects as go
@@ -28,6 +32,7 @@ class BeamInterface(ABC):
         figure_type: FigureType,
         frequency: Frequency,
         steer: tuple[Angle, Angle] | None = None,
+        save_name: str | None = None
     ) -> None:
         """Process and visualize the antenna beam pattern.
 
@@ -73,6 +78,7 @@ class Beam:
         amplitude_domain: AmplitudeDomain,
         amplitude_unit: AmplitudeUnit,
         figure_type: FigureType,
+        save_name: str | None = None
     ) -> None:
         """Routes the visualization request to the appropriate plotting method.
 
@@ -86,17 +92,23 @@ class Beam:
                 2D line slice, 2D heatmap image, or a 3D surface plot.
         """
         if figure_type == FigureType.IMAGE:
-            cls._beam_image(
+            fig = cls._beam_image(
                 df, direction_domain, phase_unit, amplitude_domain, amplitude_unit
             )
         elif figure_type == FigureType.SURFACE:
-            cls._beam_surface(
+            fig = cls._beam_surface(
                 df, direction_domain, phase_unit, amplitude_domain, amplitude_unit
             )
         elif figure_type == FigureType.SLICE:
-            cls._beam_slice(
+            fig = cls._beam_slice(
                 df, direction_domain, phase_unit, amplitude_domain, amplitude_unit
             )
+
+        if save_name:
+            dirname = os.path.dirname(save_name)
+            if dirname:
+                os.makedirs(dirname, exist_ok=True)
+            fig.write_image(f"{save_name}.png", width=1200, height=800, scale=2)
 
     @staticmethod
     def _xy_units(
@@ -123,7 +135,7 @@ class Beam:
         phase_unit: PhaseUnit,
         amplitude_domain: AmplitudeDomain,
         amplitude_unit: AmplitudeUnit,
-    ) -> None:
+    ) -> Figure:
         """Renders a 2D line plot showing pattern slices across Azimuth for distinct Elevations.
 
         Args:
@@ -157,6 +169,8 @@ class Beam:
         fig.update_layout(title="Element Antenna Beam Pattern Slices")
         fig.show()
 
+        return fig
+
     @classmethod
     def _beam_image(
         cls,
@@ -165,7 +179,7 @@ class Beam:
         phase_unit: PhaseUnit,
         amplitude_domain: AmplitudeDomain,
         amplitude_unit: AmplitudeUnit,
-    ) -> None:
+    ) -> Figure:
         """Renders a 2D binned density heatmap representing the antenna beam pattern.
 
         Args:
@@ -215,6 +229,8 @@ class Beam:
         fig.update_coloraxes(colorbar_title=mag_type)
         fig.show()
 
+        return fig
+
     @classmethod
     def _beam_surface(
         cls,
@@ -223,7 +239,7 @@ class Beam:
         phase_unit: PhaseUnit,
         amplitude_domain: AmplitudeDomain,
         amplitude_unit: AmplitudeUnit,
-    ) -> None:
+    ) -> Figure:
         """Generates and renders a 3D surface mesh using 2D binned averaging downsampling.
 
         Args:
@@ -290,13 +306,6 @@ class Beam:
             height=cls.FIGURE_HEIGHT,
         )
 
-        fig.show(
-            config={
-                "toImageButtonOptions": {
-                    "filename": "custom_image_name",
-                    "height": 800,
-                    "width": 800,
-                    "scale": 1,
-                }
-            }
-        )
+        fig.show()
+
+        return fig

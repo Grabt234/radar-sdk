@@ -73,3 +73,4 @@ dev = [
     "pydata-sphinx-theme>=0.17.1",
     "sphinx>=9.1.0",
 ]
+    

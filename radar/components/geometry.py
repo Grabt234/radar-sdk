@@ -255,7 +255,7 @@ class Cross(Geometry):
             DataHeader.X_POS_M: positions[:, 0],
             DataHeader.Y_POS_M: positions[:, 1],
         }
-        return pl.DataFrame(data).unique()
+        return pl.DataFrame(data).unique().sort([DataHeader.Y_POS_M, DataHeader.X_POS_M])
 
 
 class Circular(Geometry):
@@ -301,4 +301,4 @@ class Grid(Geometry):
             DataHeader.X_POS_M: xv.flatten(),
             DataHeader.Y_POS_M: yv.flatten(),
         }
-        return pl.DataFrame(data).unique()
+        return pl.DataFrame(data).unique().sort([DataHeader.Y_POS_M, DataHeader.X_POS_M])

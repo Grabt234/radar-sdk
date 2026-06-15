@@ -1,3 +1,5 @@
+from typing import cast
+
 from manim import ManimColor, Surface, VGroup
 
 from .element import Element
@@ -32,6 +34,7 @@ class Array:
 
         self.plot = self.Plot(self)
         self.animate = self.Animate(self)
+        self.statistic = self.Statics(self)
 
     @property
     def element(self):
@@ -156,6 +159,32 @@ class Array:
     ) -> pl.DataFrame:
         return self._calculate_array_factor(frequency, steer)
 
+    class Statics():
+        def __init__(self, arr : "Array"):
+            self._arr  = arr
+        
+        def std(self, frequency : Frequency) -> float:
+            df = self._arr.calculate_array_factor(frequency, None)
+            val = pl.Series(df[DataHeader.ANTENNA_FACTOR_DB]).std()
+            val = cast(float | None, val)
+            std_dev = val if val is not None else 0.0
+            return std_dev
+        
+        def ave(self, frequency : Frequency):
+            df = self._arr.calculate_array_factor(frequency, None)
+            val = pl.Series(df[DataHeader.ANTENNA_FACTOR_DB]).mean()
+            val = cast(float | None, val)
+            ave = val if val is not None else 0.0
+            return ave
+
+        def max(self, frequency : Frequency):
+            df = self._arr.calculate_array_factor(frequency, None)
+            val = pl.Series(df[DataHeader.ANTENNA_FACTOR_DB]).mean()
+            val = cast(float | None, val)
+            max = val if val is not None else 0.0
+            return max
+
+
     class Plot(plotter.BeamInterface, plotter.GeometryInterface):
         def __init__(self, outer: "Array"):
             self._outer = outer
@@ -170,6 +199,7 @@ class Array:
             figure_type: FigureType,
             frequency: Frequency,
             steer: tuple[Angle, Angle] | None = None,
+            save_name: str | None = None
         ):
             df = self._outer.beam_pattern(frequency, steer)
             self.plot._plot_beam(
@@ -179,6 +209,7 @@ class Array:
                 amplitude_domain,
                 amplitude_unit,
                 figure_type,
+                save_name
             )
 
         def geometry(self):

@@ -205,6 +205,7 @@ class Element:
             figure_type: FigureType,
             frequency: Frequency,
             steer: tuple[Angle, Angle] | None = None,
+            save_name: str | None = None,
         ) -> None:
             """Prepares data parameters and dispatches requests to the plotter renderer.
 
@@ -219,6 +220,7 @@ class Element:
                 amplitude_unit (AmplitudeUnit): Linear vs logarithmic scale configuration context.
                 figure_type (FigureType): Targeted plot layout style (e.g., Image, Surface, Slice).
                 steer (tuple[Angle, Angle] | None): Ignored for single element beams.
+                save_name (str | None): Optional filename prefix to save the plot as a PNG image.
             """
             if amplitude_domain is AmplitudeDomain.AntennaFactor:
                 warnings.warn(
@@ -237,6 +239,7 @@ class Element:
                 amplitude_domain,
                 amplitude_unit,
                 figure_type,
+                save_name,
             )
 
     class Animate(animate.BeamInterface):
