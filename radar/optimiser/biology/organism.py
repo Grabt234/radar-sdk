@@ -2,7 +2,6 @@ from typing import List, Tuple
 import random
 import uuid
 from .chromosome import Chromosome
-from typing import List, Tuple
 
 class Organism:
     """Represents an individual organism containing a set of chromosomes.
@@ -17,6 +16,13 @@ class Organism:
         mutation_chance: float = 0.45, 
         major_mutation_chance: float = 0.30
     ):
+        """Initializes the Organism with a collection of chromosomes and mutation rates.
+
+        Args:
+            chromosomes (List[Chromosome]): The set of traits representing the organism's configuration.
+            mutation_chance (float, optional): Probability of a mutation occurring on each chromosome. Defaults to 0.45.
+            major_mutation_chance (float, optional): Probability that an occurred mutation is a major reset rather than minor drift. Defaults to 0.30.
+        """
         self._chromosomes = chromosomes
         self.mutation_chance = mutation_chance
         self.major_mutation_chance = major_mutation_chance
@@ -70,3 +76,4 @@ class Organism:
                     chromosome.mutate_major(num_rows=5)
                 else:
                     chromosome.mutate_minor(num_rows=5, pct=0.1)
+   

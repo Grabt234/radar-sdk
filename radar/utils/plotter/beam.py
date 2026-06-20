@@ -1,5 +1,4 @@
 import os
-import plotly
 import polars as pl
 import numpy as np
 import plotly.express as px

@@ -1,8 +1,6 @@
-import random
 import uuid
 import numpy as np
 import polars as pl
-from typing import Callable, List, Tuple
 
 class Chromosome:
     """Represents a single-column genetic sequence that can undergo mutations.
