@@ -21,7 +21,7 @@ class Frequency:
     def __hash__(self) -> int:
         """Computes a hash value based on the absolute value in Hertz."""
         return hash(self._frequency_hz)
-    
+
     @property
     def Hz(self) -> float:
         """Returns the frequency value in Hertz (Hz)."""

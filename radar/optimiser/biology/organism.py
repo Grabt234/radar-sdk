@@ -4,18 +4,19 @@ import uuid
 import polars as pl
 from .chromosome import Chromosome
 
+
 class Organism:
     """Represents an individual organism containing a set of chromosomes.
-    
+
     Handles genetic operations at the organism level, including independent
     crossover (mating) and rolling mutations.
     """
-    
+
     def __init__(
-        self, 
-        chromosomes: List[Chromosome], 
-        mutation_chance: float = 0.1, 
-        major_mutation_chance: float = 0.1
+        self,
+        chromosomes: List[Chromosome],
+        mutation_chance: float = 0.1,
+        major_mutation_chance: float = 0.1,
     ):
         """Initializes the Organism with a collection of chromosomes and mutation rates.
 
@@ -42,35 +43,41 @@ class Organism:
     def mate(self, organism: "Organism") -> Tuple["Organism", "Organism"]:
         """Mates this organism with another, producing two offspring."""
         # 1. Perform genetic crossover to get clean, isolated child configurations
-        child_1_chroms, child_2_chroms = self._cross_over(organism)        
-        
-        child_1 = Organism(child_1_chroms, self.mutation_chance, self.major_mutation_chance)
-        child_2 = Organism(child_2_chroms, self.mutation_chance, self.major_mutation_chance)
-        
+        child_1_chroms, child_2_chroms = self._cross_over(organism)
+
+        child_1 = Organism(
+            child_1_chroms, self.mutation_chance, self.major_mutation_chance
+        )
+        child_2 = Organism(
+            child_2_chroms, self.mutation_chance, self.major_mutation_chance
+        )
+
         # 2. Mutate both children independently
         child_1._mutate()
         child_2._mutate()
 
         return child_1, child_2
-    
-    def _cross_over(self, organism: "Organism") -> Tuple[List[Chromosome], List[Chromosome]]:
+
+    def _cross_over(
+        self, organism: "Organism"
+    ) -> Tuple[List[Chromosome], List[Chromosome]]:
         """Executes a single-point crossover between chromosome lists."""
         # Clone chromosomes to completely isolate child genetic structures from parent arrays
         chroms_a = [c.clone() for c in self._chromosomes]
         chroms_b = [c.clone() for c in organism.chromosomes]
-        
+
         min_length = min(len(chroms_a), len(chroms_b))
-        
+
         if min_length < 2:
             if random.random() > 0.5:
                 return chroms_a, chroms_b
             return chroms_b, chroms_a
-            
+
         crossover_point = random.randint(1, min_length - 1)
-        
+
         child_1_chromosomes = chroms_a[:crossover_point] + chroms_b[crossover_point:]
         child_2_chromosomes = chroms_b[:crossover_point] + chroms_a[crossover_point:]
-        
+
         return child_1_chromosomes, child_2_chromosomes
 
     def _mutate(self) -> None:
@@ -94,12 +101,12 @@ class Organism:
 
     @classmethod
     def from_df(
-        cls, 
-        df: pl.DataFrame, 
-        min_vals: List[float], 
-        max_vals: List[float], 
-        mutation_chance: float = 0.45, 
-        major_mutation_chance: float = 0.30
+        cls,
+        df: pl.DataFrame,
+        min_vals: List[float],
+        max_vals: List[float],
+        mutation_chance: float = 0.45,
+        major_mutation_chance: float = 0.30,
     ) -> "Organism":
         """Reconstructs an Organism from a Polars DataFrame.
 
@@ -114,7 +121,9 @@ class Organism:
             Organism: The reconstructed Organism.
         """
         chromosomes = []
-        for col_name, min_val, max_val in zip(df.columns, min_vals, max_vals, strict=True):
+        for col_name, min_val, max_val in zip(
+            df.columns, min_vals, max_vals, strict=True
+        ):
             chrom = Chromosome(col_name, min_val, max_val, 0)
             chrom._df = df.select(col_name)
             chromosomes.append(chrom)
@@ -136,12 +145,12 @@ class Organism:
 
     @classmethod
     def load(
-        cls, 
-        file_path: str, 
-        min_vals: List[float], 
-        max_vals: List[float], 
-        mutation_chance: float = 0.45, 
-        major_mutation_chance: float = 0.30
+        cls,
+        file_path: str,
+        min_vals: List[float],
+        max_vals: List[float],
+        mutation_chance: float = 0.45,
+        major_mutation_chance: float = 0.30,
     ) -> "Organism":
         """Loads an organism from a saved CSV, Parquet, or IPC file.
 
@@ -161,6 +170,7 @@ class Organism:
             df = pl.read_csv(file_path)
         else:
             raise ValueError("Unsupported file format. Use .csv, .parquet, or .ipc")
-            
-        return cls.from_df(df, min_vals, max_vals, mutation_chance, major_mutation_chance)
-   
+
+        return cls.from_df(
+            df, min_vals, max_vals, mutation_chance, major_mutation_chance
+        )

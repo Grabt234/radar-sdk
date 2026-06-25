@@ -8,7 +8,8 @@ class BoundType(Enum):
 
 # Type alias: (column_name, lower_val, upper_val, bound_type)
 FilterTuple = tuple[str, float, float, BoundType]
-   
+
+
 class FigureType(Enum):
     SURFACE = "surface"
     IMAGE = "image"

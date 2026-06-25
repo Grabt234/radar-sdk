@@ -2,6 +2,7 @@ import uuid
 import numpy as np
 import polars as pl
 
+
 class Chromosome:
     """Represents a single-column genetic sequence that can undergo mutations.
 
@@ -13,7 +14,9 @@ class Chromosome:
     def __init__(self, header: str, min_val: float, max_val: float, num_values: int):
         """Initializes the Chromosome by generating a single-column DataFrame."""
         if min_val >= max_val:
-            raise ValueError(f"min_val ({min_val}) must be strictly less than max_val ({max_val}).")
+            raise ValueError(
+                f"min_val ({min_val}) must be strictly less than max_val ({max_val})."
+            )
         if num_values < 0:
             raise ValueError("num_values must be a non-negative integer.")
 
@@ -46,7 +49,7 @@ class Chromosome:
         sample_size = min(num_rows, total_rows)
         indices = np.random.choice(total_rows, size=sample_size, replace=False)
         new_values = np.random.uniform(self.min_val, self.max_val, size=sample_size)
-        
+
         # .copy() decouples array from Polars' internal read-only memory buffer
         series = self._df[self._col_name].to_numpy().copy()
         series[indices] = new_values
@@ -62,10 +65,12 @@ class Chromosome:
 
         sample_size = min(num_rows, total_rows)
         indices = np.random.choice(total_rows, size=sample_size, replace=False)
-        
+
         series = self._df[self._col_name].to_numpy().copy()
         modifiers = np.random.uniform(1 - pct, 1 + pct, size=sample_size)
-        
+
         # Apply mutation and clamp inside safe boundaries
-        series[indices] = np.clip(series[indices] * modifiers, self.min_val, self.max_val)
+        series[indices] = np.clip(
+            series[indices] * modifiers, self.min_val, self.max_val
+        )
         self._df = pl.DataFrame({self._col_name: series})

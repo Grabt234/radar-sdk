@@ -158,7 +158,7 @@ class Array:
             DataHeader.ANTENNA_FACTOR_LINEAR: af_mag,
         }
 
-        self._array_factors[(frequency,steer)] = result_data
+        self._array_factors[(frequency, steer)] = result_data
 
         return pl.DataFrame(result_data)
 
@@ -170,25 +170,48 @@ class Array:
 
         if (frequency, steer) in self._array_factors:
             return self._array_factors[(frequency, steer)]
-        
+
         return self._calculate_array_factor(frequency, steer)
 
-    class Statistics():
-        def __init__(self, arr : "Array"):
-            self._arr  = arr
-        
-        def std(self, header : str, frequency : Frequency, filters : list[FilterTuple] | None = None, steer: tuple[Angle, Angle] | None = None, combine_method: Literal["AND", "OR"] = "AND") -> float:
+    class Statistics:
+        def __init__(self, arr: "Array"):
+            self._arr = arr
+
+        def std(
+            self,
+            header: str,
+            frequency: Frequency,
+            filters: list[FilterTuple] | None = None,
+            steer: tuple[Angle, Angle] | None = None,
+            combine_method: Literal["AND", "OR"] = "AND",
+        ) -> float:
             df = self._arr.calculate_array_factor(frequency, None)
             return Statistic.std(df, header, filters, combine_method)
-        
-        def mean(self, header : str,frequency : Frequency, filters : list[FilterTuple] | None, steer: tuple[Angle, Angle] | None = None, combine_method: Literal["AND", "OR"] = "AND"):
+
+        def mean(
+            self,
+            header: str,
+            frequency: Frequency,
+            filters: list[FilterTuple] | None,
+            steer: tuple[Angle, Angle] | None = None,
+            combine_method: Literal["AND", "OR"] = "AND",
+        ):
             df = self._arr.calculate_array_factor(frequency, None)
             return Statistic.mean(df, header, filters, combine_method)
 
-        def max(self, header : str, frequency : Frequency, filters : list[FilterTuple] | None, steer: tuple[Angle, Angle] | None = None, combine_method: Literal["AND", "OR"] = "AND"):
-            df = self._arr.calculate_array_factor(frequency, None,)
-            return  Statistic.max(df, header, filters,combine_method)
-
+        def max(
+            self,
+            header: str,
+            frequency: Frequency,
+            filters: list[FilterTuple] | None,
+            steer: tuple[Angle, Angle] | None = None,
+            combine_method: Literal["AND", "OR"] = "AND",
+        ):
+            df = self._arr.calculate_array_factor(
+                frequency,
+                None,
+            )
+            return Statistic.max(df, header, filters, combine_method)
 
     class Plot(plotter.BeamInterface, plotter.GeometryInterface):
         def __init__(self, outer: "Array"):
@@ -204,7 +227,7 @@ class Array:
             figure_type: FigureType,
             frequency: Frequency,
             steer: tuple[Angle, Angle] | None = None,
-            save_name: str | None = None
+            save_name: str | None = None,
         ):
             df = self._outer.beam_pattern(frequency, steer)
             self.plot._plot_beam(
@@ -214,7 +237,7 @@ class Array:
                 amplitude_domain,
                 amplitude_unit,
                 figure_type,
-                save_name
+                save_name,
             )
 
         def geometry(self):

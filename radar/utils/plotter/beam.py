@@ -31,7 +31,7 @@ class BeamInterface(ABC):
         figure_type: FigureType,
         frequency: Frequency,
         steer: tuple[Angle, Angle] | None = None,
-        save_name: str | None = None
+        save_name: str | None = None,
     ) -> None:
         """Process and visualize the antenna beam pattern.
 
@@ -77,7 +77,7 @@ class Beam:
         amplitude_domain: AmplitudeDomain,
         amplitude_unit: AmplitudeUnit,
         figure_type: FigureType,
-        save_name: str | None = None
+        save_name: str | None = None,
     ) -> None:
         """Routes the visualization request to the appropriate plotting method.
 
