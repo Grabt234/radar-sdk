@@ -4,6 +4,17 @@ from .organism import Organism
 from .chromosome import Chromosome
 import uuid
 
+# Define a helper function at the module level (required for process pooling)
+def create_community(size, headers, num_vals, mins, maxs, kill_p):
+    return Community(
+        community_size=size, 
+        headers=headers, 
+        num_values_per_chrom=num_vals, 
+        min_vals=mins, 
+        max_vals=maxs,
+        kill_prop=kill_p
+    )
+
 class Community:
     """Manages a collection of Organisms, executing selection, sorting,
     mating, and generational propagation based on fitness scores.
@@ -16,7 +27,7 @@ class Community:
         num_values_per_chrom: int,
         min_vals: List[float],
         max_vals: List[float],
-        kill_prop: float = 0.5,
+        kill_prop: float = 0.3,
     ):
         """Initializes the population by generating a specified number of organisms."""
         if not (0.0 <= kill_prop < 1.0):
@@ -49,13 +60,13 @@ class Community:
         """Returns the current list of organisms in the population."""
         return self._organisms
 
-    def sort(self, fitness_fn: Callable[[Organism], float]) -> None:
-        """Evaluates and reorders the population. 
+    def sort(self, fitness_fn: Callable[[Organism], dict]) -> None:
+        """Evaluates and reorders the population. d]) -
         
         Default behavior sorts by absolute value (closest to 0 comes first).
         """
         # 1. Map organisms to their raw scores
-        self._fitness_map = {org: fitness_fn(org) for org in self._organisms}
+        self._fitness_map = {org: fitness_fn(org)["fitness"] for org in self._organisms}
 
         # 2. Sort the actual list in place based on ABSOLUTE value (distance from 0)
         # reverse=False means smallest distance (closest to 0) comes first
@@ -110,10 +121,10 @@ class Community:
 
         self._organisms = self._organisms[:self.community_size]     
 
-    def propagate(self, fitness_fn: Callable[[Organism], float]) -> None:
+    def propagate(self, fitness_fn: Callable[[Organism], dict]) -> None:
         """Executes a full generational cycle while preserving elite performance thresholds."""
-        # Ensure the population is sorted before first selection
-        if self._fittest_organism[0] is None:
+        # Ensure the population is sorted before first selection or if new organisms have been seeded
+        if self._fittest_organism[0] is None or len(self._organisms) > self.community_size:
             self.sort(fitness_fn)
             
         # Step 3: Cull the weak performers

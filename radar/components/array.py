@@ -1,6 +1,10 @@
-from typing import cast
+from ast import List
+from typing import Literal, cast
 
 from manim import ManimColor, Surface, VGroup
+
+from radar.utils.typing.enums import BoundType, FilterTuple
+from radar.utils.typing.validator import AngleBound
 
 from .element import Element
 from .geometry import Geometry
@@ -17,6 +21,8 @@ from radar.utils.typing import (
 )
 
 from radar.utils.calculate.convert import to_db
+from radar.utils.calculate.statistics import Statistic
+
 import numpy as np
 import numpy.typing as npt
 import polars as pl
@@ -34,7 +40,9 @@ class Array:
 
         self.plot = self.Plot(self)
         self.animate = self.Animate(self)
-        self.statistic = self.Statics(self)
+        self.statistic = self.Statistics(self)
+
+        self._array_factors = {}
 
     @property
     def element(self):
@@ -150,6 +158,8 @@ class Array:
             DataHeader.ANTENNA_FACTOR_LINEAR: af_mag,
         }
 
+        self._array_factors[(frequency,steer)] = result_data
+
         return pl.DataFrame(result_data)
 
     def calculate_array_factor(
@@ -157,32 +167,27 @@ class Array:
         frequency: Frequency,
         steer: tuple[Angle, Angle] | None,
     ) -> pl.DataFrame:
+
+        if (frequency, steer) in self._array_factors:
+            return self._array_factors[(frequency, steer)]
+        
         return self._calculate_array_factor(frequency, steer)
 
-    class Statics():
+    class Statistics():
         def __init__(self, arr : "Array"):
             self._arr  = arr
         
-        def std(self, frequency : Frequency) -> float:
+        def std(self, header : str, frequency : Frequency, filters : list[FilterTuple] | None = None, steer: tuple[Angle, Angle] | None = None, combine_method: Literal["AND", "OR"] = "AND") -> float:
             df = self._arr.calculate_array_factor(frequency, None)
-            val = pl.Series(df[DataHeader.ANTENNA_FACTOR_DB]).std()
-            val = cast(float | None, val)
-            std_dev = val if val is not None else 0.0
-            return std_dev
+            return Statistic.std(df, header, filters, combine_method)
         
-        def ave(self, frequency : Frequency):
+        def mean(self, header : str,frequency : Frequency, filters : list[FilterTuple] | None, steer: tuple[Angle, Angle] | None = None, combine_method: Literal["AND", "OR"] = "AND"):
             df = self._arr.calculate_array_factor(frequency, None)
-            val = pl.Series(df[DataHeader.ANTENNA_FACTOR_DB]).mean()
-            val = cast(float | None, val)
-            ave = val if val is not None else 0.0
-            return ave
+            return Statistic.mean(df, header, filters, combine_method)
 
-        def max(self, frequency : Frequency):
-            df = self._arr.calculate_array_factor(frequency, None)
-            val = pl.Series(df[DataHeader.ANTENNA_FACTOR_DB]).mean()
-            val = cast(float | None, val)
-            max = val if val is not None else 0.0
-            return max
+        def max(self, header : str, frequency : Frequency, filters : list[FilterTuple] | None, steer: tuple[Angle, Angle] | None = None, combine_method: Literal["AND", "OR"] = "AND"):
+            df = self._arr.calculate_array_factor(frequency, None,)
+            return  Statistic.max(df, header, filters,combine_method)
 
 
     class Plot(plotter.BeamInterface, plotter.GeometryInterface):

@@ -70,7 +70,7 @@ class Population:
             for _ in range(num_communities)
         ]
 
-    def propogate(self, fitness_fn: Callable[[Organism], float], elite = False, plot = True, generation=0):
+    def propogate(self, fitness_fn: Callable[[Organism], dict], elite = False, plot = True, generation=0):
         """Executes a single generation step across all communities.
 
         When elite is False, it propagates all communities (including the elite community) 
@@ -87,7 +87,7 @@ class Population:
         start_time = time.perf_counter()
 
         if not elite:
-            with ThreadPoolExecutor(max_workers=20) as executor:
+            with ThreadPoolExecutor(max_workers=50) as executor:
                 # Submits all jobs to the pool at once
                 futures = [
                     executor.submit(community.propagate, fitness_fn) 
@@ -121,14 +121,16 @@ class Population:
             self._elite_community.mate()
             self._elite_community.sort(fitness_fn)
             self._elite_community.select()
-            
-        self.generation.append(label="fitness", x=generation, y=fitness_fn(self._elite_community._organisms[0]))
+        
+        results = fitness_fn(self._elite_community._organisms[0])
+        for key, value in results.items():
+            self.generation.append(label=key, x=generation, y=value)
         
         end_time = time.perf_counter()
 
         # Calculate elapsed time
-        # elapsed_time = end_time - start_time
-        # print(f"Code took {elapsed_time:.4f} seconds to complete.")
+        elapsed_time = end_time - start_time
+        self.generation.append(label="timer", x=generation, y=elapsed_time)
 
     # Alias to support correct spelling
     propagate = propogate
@@ -139,4 +141,4 @@ class Population:
         Args:
             org (Organism): The pre-configured organism to seed into the elite community.
         """
-        self._elite_community.seed(org)
+        self._elite_community.seed(org.clone())
