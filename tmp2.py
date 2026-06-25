@@ -110,7 +110,7 @@ def calculate_genetic_health3(org: Organism, generation : int | None = None, plo
 #1. Initialize your population
 from radar.optimiser.biology import Population
 
-pop = Population(5, 10,[DataHeader.X_POS_M, DataHeader.Y_POS_M, DataHeader.GEOM_AMP_GAIN_DB], 25, [-0.5, -0.5, -3], [0.5, 0.5, 0], 0.60)
+pop = Population(50, 500,[DataHeader.X_POS_M, DataHeader.Y_POS_M, DataHeader.GEOM_AMP_GAIN_DB], 25, [-0.5, -0.5, -3], [0.5, 0.5, 0], 0.60)
 if "generation" in locals():
     del generation
 
@@ -127,7 +127,7 @@ for generation in range(start, num_generations + 1):
     # 3. Propagate the population to the next generation
     # Pass the function name without parentheses!
 
-    if generation % 15:
+    if generation % 20:
         pop.propogate(fitness_fn=calculate_genetic_health3, elite=False,generation=generation)
         print(f"Generation {generation}/{num_generations}")
     else:
