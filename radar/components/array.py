@@ -209,10 +209,25 @@ class Array:
         ):
             df = self._arr.calculate_array_factor(
                 frequency,
+                
                 None,
             )
             return Statistic.max(df, header, filters, combine_method)
 
+        def min(
+            self,
+            header: str,
+            frequency: Frequency,
+            filters: list[FilterTuple] | None,
+            steer: tuple[Angle, Angle] | None = None,
+            combine_method: Literal["AND", "OR"] = "AND",
+        ):
+            df = self._arr.calculate_array_factor(
+                frequency,
+                None,
+            )
+            return Statistic.min(df, header, filters, combine_method)
+        
     class Plot(plotter.BeamInterface, plotter.GeometryInterface):
         def __init__(self, outer: "Array"):
             self._outer = outer

@@ -48,6 +48,20 @@ class Statistic:
         return val if val is not None else 0.0
 
     @classmethod
+    def min(
+        cls,
+        df: pl.DataFrame,
+        header: str,
+        filters: list[FilterTuple] | None = None,
+        combine_method: Literal["AND", "OR"] = "AND",
+    ) -> float:
+        if filters:
+            df = cls._filter_by_bounds(df, filters, combine_method)
+        val = df[header].max()
+        val = cast(float | None, val)
+        return val if val is not None else 0.0
+    
+    @classmethod
     def _filter_by_bounds(
         cls,
         df: pl.DataFrame,
