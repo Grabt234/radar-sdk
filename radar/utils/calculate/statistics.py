@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Literal, cast
 import polars as pl
 from radar.utils.typing.enums import BoundType, FilterTuple
@@ -60,7 +59,7 @@ class Statistic:
         val = df[header].max()
         val = cast(float | None, val)
         return val if val is not None else 0.0
-    
+
     @classmethod
     def _filter_by_bounds(
         cls,

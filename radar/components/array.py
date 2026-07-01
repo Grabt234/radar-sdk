@@ -1,10 +1,8 @@
-from ast import List
-from typing import Literal, cast
+from typing import Literal
 
 from manim import ManimColor, Surface, VGroup
 
-from radar.utils.typing.enums import BoundType, FilterTuple
-from radar.utils.typing.validator import AngleBound
+from radar.utils.typing.enums import FilterTuple
 
 from .element import Element
 from .geometry import Geometry
@@ -209,7 +207,6 @@ class Array:
         ):
             df = self._arr.calculate_array_factor(
                 frequency,
-                
                 None,
             )
             return Statistic.max(df, header, filters, combine_method)
@@ -227,7 +224,7 @@ class Array:
                 None,
             )
             return Statistic.min(df, header, filters, combine_method)
-        
+
     class Plot(plotter.BeamInterface, plotter.GeometryInterface):
         def __init__(self, outer: "Array"):
             self._outer = outer
